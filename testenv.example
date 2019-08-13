@@ -1,0 +1,8 @@
+package wechat
+
+// 通过 接口测试号申请 获取加密信息替换到下面的 xxxxxxxx 中
+// https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421137522
+// 然后新建文件 testenv.go 即可运行单元测试
+// 不要删除 testenv.go.example 要留着作为示例
+var EnvAPPID = "xxxxxxxxxxxxxxxxxxxxxxxx"
+var EnvAPPSecret = "xxxxxxxxxxxxxxxxxxxx"
