@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 )
 // 接口域名说明
@@ -21,16 +22,26 @@ type Wechat struct {
 	APPSecret string
 }
 const cacheKey_GetAccessToken = "og_wechat_go_get_access_token"
-var memoryCache = make(map[string]string)
+var memoryCache = struct {
+	sync.RWMutex
+	m map[string]string
+}{m: make(map[string]string)}
+
 func (this Wechat) GetCache(key string) (value string, has bool) {
-	value, has = memoryCache[key]
+	memoryCache.RLock()
+	value, has = memoryCache.m[key]
+	memoryCache.RUnlock()
 	return
 }
 func (this Wechat) SetCache(key string, value string, expiration time.Duration) {
-	memoryCache[key] = value
+	memoryCache.RLock()
+	memoryCache.m[key] = value
+	memoryCache.RUnlock()
 	if expiration != 0 {
 		time.AfterFunc(expiration, func() {
-			delete(memoryCache, key)
+			memoryCache.RLock()
+			delete(memoryCache.m, key)
+			memoryCache.RUnlock()
 		})
 	}
 }
