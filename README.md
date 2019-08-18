@@ -1,7 +1,7 @@
-# wechat-go
+# wechat
 
 
-[![GoDoc](https://godoc.org/github.com/onface/wechat-go?status.svg)](https://godoc.org/github.com/og/wechat-go)
+[![GoDoc](https://godoc.org/github.com/og/gowechat?status.svg)](https://godoc.org/github.com/og/gowechat)
 
 
 # 功能
