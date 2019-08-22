@@ -34,9 +34,8 @@ func (this Wechat) GetCache(key string) (value string, has bool) {
 	return
 }
 func (this Wechat) SetCache(key string, value string, expiration time.Duration) {
-	memoryCache.RLock()
+	memoryCache.Lock()
 	memoryCache.m[key] = value
-	memoryCache.RUnlock()
 	if expiration != 0 {
 		time.AfterFunc(expiration, func() {
 			memoryCache.RLock()

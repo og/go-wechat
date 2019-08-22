@@ -11,7 +11,8 @@ var wechat = Wechat{
 }
 func TestGetAccessToken (t *testing.T) {
 	firstAccessToken := wechat.GetAccessToken()
-	assert.Equal(t, len(firstAccessToken), 157)
+	tokenLen := len(firstAccessToken)
+	assert.EqualValues(t, 136<= tokenLen && tokenLen <= 157,true)
 	// check cache
 	secondAccessToken := wechat.GetAccessToken()
 	assert.Equal(t, firstAccessToken, secondAccessToken)
