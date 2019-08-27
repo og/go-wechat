@@ -43,8 +43,6 @@ func (this Wechat) getCacheKeyGetAccessToken () string {
 
 // 获取access_token
 // https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421140183
-// 在内部实现了内存缓存 accessToken 目前(2019年08月)微信接口返回的 凭证有效时间 是 7200 秒,内存缓存保存 (7200 - 30) 秒
-// 119 分钟内不会再次请求微信接口，这样可以提高响应速度
 func (this Wechat) GetAccessToken () (accessToken string) {
 	apiPath := "/cgi-bin/token"
 	type apiQuery struct {
@@ -141,6 +139,8 @@ func (this Wechat) GetShortURL (longURL string) (shortURL string)  {
 // scope 参数使用 wecaht.Dict().WebRedirectAuthorize.Scope 传递
 // redirectURI 授权后重定向的回调链接地址, 函数内部已进行 urlEncode 操作，调用方无需 urlEncode
 // state 重定向后会带上state参数，开发者可以填写a-zA-Z0-9的参数值，最多128字节
+
+// 成功后如果用户同意授权，页面将跳转至 redirect_uri/?code=CODE&state=STATE。
 func (this Wechat) WebRedirectAuthorize(scope string, redirectURI string, state string) string {
 	type queryT struct {
 		AppID string `url:"appid"`
