@@ -31,3 +31,22 @@ func TestGetShortURL (t *testing.T) {
 	// secondShortURL := wechat.GetShortURL("https://github.com/og")
 	// assert.Regexp(t, firstShortURL, secondShortURL)
 }
+
+func TestWechat_WebRedirectAuthorize(t *testing.T) {
+	{
+		url := wechat.WebRedirectAuthorize(
+			Dict().WebRedirectAuthorize.Scope.SnsapiBase,
+			"https://github.com/og/gowecaht",
+			"WECHAT_AUTH",
+		)
+		assert.Equal(t, "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx25076a02429daba9&redirect_uri=https%3A%2F%2Fgithub.com%2Fog%2Fgowecaht&response_type=code&scope=snsapi_base&state=WECHAT_AUTH#wechat_redirect", url)
+	}
+	{
+		url := wechat.WebRedirectAuthorize(
+			Dict().WebRedirectAuthorize.Scope.SnsapiBase,
+			"https://github.com/og/gowecaht?a=1&b=2",
+			"WECHAT_AUTH",
+		)
+		assert.Equal(t, "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx25076a02429daba9&redirect_uri=https%3A%2F%2Fgithub.com%2Fog%2Fgowecaht%3Fa%3D1%26b%3D2&response_type=code&scope=snsapi_base&state=WECHAT_AUTH#wechat_redirect", url)
+	}
+}

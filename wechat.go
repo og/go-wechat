@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	qs "github.com/google/go-querystring/query"
+	ge "github.com/og/goerror"
 	"github.com/og/so"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -132,4 +133,29 @@ func (this Wechat) GetShortURL (longURL string) (shortURL string)  {
 	shortURL = respData.ShortURL
 	this.Hook.ShortURLWriteStorage(longURL, shortURL)
 	return
+}
+
+
+// 微信网页授权第一步跳转
+// https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421140842
+// scope 参数使用 wecaht.Dict().WebRedirectAuthorize.Scope 传递
+// redirectURI 授权后重定向的回调链接地址, 函数内部已进行 urlEncode 操作，调用方无需 urlEncode
+// state 重定向后会带上state参数，开发者可以填写a-zA-Z0-9的参数值，最多128字节
+func (this Wechat) WebRedirectAuthorize(scope string, redirectURI string, state string) string {
+	type queryT struct {
+		AppID string `url:"appid"`
+		RedirectURI string `url:"redirect_uri"`
+		ResponseType string `url:"response_type"`
+		Scope string `url:"scope"`
+		State string `url:"state"`
+	}
+	query := queryT {
+		AppID: this.APPID,
+		RedirectURI: redirectURI,
+		ResponseType: "code",
+		Scope: scope,
+		State: state,
+	}
+	querystring, err := qs.Values(query) ; ge.Check(err)
+	return "https://open.weixin.qq.com/connect/oauth2/authorize?" + querystring.Encode() + "#wechat_redirect"
 }
