@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
-	"sync"
+	"strings"
 	"time"
 )
 // 接口域名说明
@@ -17,33 +17,27 @@ import (
 var APIDomain = "https://api.weixin.qq.com"
 var AlternativeAPIDomain = "https://api2.weixin.qq.com"
 
+type CacheInterface interface {
+	Read(key string) (value string, has bool)
+	Write(key string, value string, expiration time.Duration)
+}
+type HookInterface interface {
+	ShortURLReadStorage (longURL string) (shortURL string, has bool)
+	ShortURLWriteStorage (longURL string, shortURL string)
+}
 type Wechat struct {
 	APPID string
 	APPSecret string
+	Cache CacheInterface
+	Hook HookInterface
 }
-const cacheKey_GetAccessToken = "og_wechat_go_get_access_token"
-var memoryCache = struct {
-	sync.RWMutex
-	m map[string]string
-}{m: make(map[string]string)}
 
-func (this Wechat) GetCache(key string) (value string, has bool) {
-	memoryCache.RLock()
-	value, has = memoryCache.m[key]
-	memoryCache.RUnlock()
-	return
-}
-func (this Wechat) SetCache(key string, value string, expiration time.Duration) {
-	memoryCache.Lock()
-	memoryCache.m[key] = value
-	memoryCache.Unlock()
-	if expiration != 0 {
-		time.AfterFunc(expiration, func() {
-			memoryCache.RLock()
-			delete(memoryCache.m, key)
-			memoryCache.RUnlock()
-		})
-	}
+func (this Wechat) getCacheKeyGetAccessToken () string {
+	return strings.Join([]string{
+		"og_wechat",
+		this.APPID,
+		"get_access_token",
+	}, ":")
 }
 
 // 获取access_token
@@ -63,7 +57,7 @@ func (this Wechat) GetAccessToken () (accessToken string) {
 		AccessToken string `json:"access_token"`
 		ExpiresIn int `json:"expires_in"`
 	}
-	cacheValue, hasCacheValue := this.GetCache(cacheKey_GetAccessToken)
+	cacheValue, hasCacheValue := this.Cache.Read(this.getCacheKeyGetAccessToken())
 	if hasCacheValue {
 		return cacheValue
 	}
@@ -87,27 +81,13 @@ func (this Wechat) GetAccessToken () (accessToken string) {
 	}
 	accessToken = resData.AccessToken
 	// 减去30秒是防御措施，防止access token 失效前一秒进行请求网络返回 token 失效
-	this.SetCache(cacheKey_GetAccessToken, accessToken, time.Duration(resData.ExpiresIn - 30) * time.Second)
+	this.Cache.Write(this.getCacheKeyGetAccessToken(), accessToken, time.Duration(resData.ExpiresIn - 30) * time.Second)
 	return accessToken
-}
-// 将查询结果缓存再内存中或 redis mysql mongodb 中（默认在内存中）
-var shortURLMemoryStorage = make(map[string]string)
-func (this Wechat) ShortURLHookReadStorage (longURL string) (shortURL string, has bool) {
-	shortURL, has = shortURLMemoryStorage[longURL]
-	return
-}
-// 只设置 5 秒的缓存，防止高并发大量url导致内存爆掉，如需更长的过期时间调用者最好自己存入持久化存储中
-func (this Wechat) ShortURLHookWriteStorage (longURL string, shortURL string) () {
-	time.AfterFunc(time.Duration(1 * time.Second), func() {
-		delete(shortURLMemoryStorage, longURL)
-	})
-	shortURLMemoryStorage[longURL] = shortURL
-	return
 }
 // 长链接转短链接接口
 // https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1443433600
 func (this Wechat) GetShortURL (longURL string) (shortURL string)  {
-	storageValue, has := this.ShortURLHookReadStorage(longURL)
+	storageValue, has := this.Hook.ShortURLReadStorage(longURL)
 	if has {
 		shortURL = storageValue
 		return
@@ -150,6 +130,6 @@ func (this Wechat) GetShortURL (longURL string) (shortURL string)  {
 		panic(errors.New(fmt.Sprintf("%#v", respData)))
 	}
 	shortURL = respData.ShortURL
-	this.ShortURLHookWriteStorage(longURL, shortURL)
+	this.Hook.ShortURLWriteStorage(longURL, shortURL)
 	return
 }
