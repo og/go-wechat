@@ -6,7 +6,6 @@ import (
 	"fmt"
 	qs "github.com/google/go-querystring/query"
 	ge "github.com/og/goerror"
-	"github.com/og/so"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
@@ -25,6 +24,8 @@ type CacheInterface interface {
 type HookInterface interface {
 	ShortURLReadStorage (longURL string) (shortURL string, has bool)
 	ShortURLWriteStorage (longURL string, shortURL string)
+	AccessTokenReadStorage(key string) (value string, has bool)
+	AccessTokenWriteStorage(key string, value string, expiration time.Duration)
 }
 type Wechat struct {
 	APPID string
@@ -42,8 +43,10 @@ func (this Wechat) getCacheKeyGetAccessToken () string {
 }
 
 // 获取access_token
-// https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421140183
-func (this Wechat) GetAccessToken () (accessToken string) {
+// https://developers.weixin.qq.com/doc/offiaccount/Basic_Information/Get_access_token.html
+// 多个服务端使用同一个 appid 的情况下应该只有一个服务端向微信获取  access_token，否则会导致 access_token 冲突
+// 建议公众号开发者使用中控服务器统一获取和刷新access_token，其他业务逻辑服务器所使用的access_token均来自于该中控服务器，不应该各自去刷新，否则容易造成冲突，导致access_token覆盖而影响业务；
+func (this Wechat) UnsafeGetAccessToken () (accessToken string) {
 	apiPath := "/cgi-bin/token"
 	type apiQuery struct {
 		GrantType string `url:"grant_type"`
@@ -56,7 +59,7 @@ func (this Wechat) GetAccessToken () (accessToken string) {
 		AccessToken string `json:"access_token"`
 		ExpiresIn int `json:"expires_in"`
 	}
-	cacheValue, hasCacheValue := this.Cache.Read(this.getCacheKeyGetAccessToken())
+	cacheValue, hasCacheValue := this.Hook.AccessTokenReadStorage(this.getCacheKeyGetAccessToken())
 	if hasCacheValue {
 		return cacheValue
 	}
@@ -66,21 +69,21 @@ func (this Wechat) GetAccessToken () (accessToken string) {
 		APPID: this.APPID,
 		Secret: this.APPSecret,
 	}
-	queryValues, err := qs.Values(query); so.C(err)
+	queryValues, err := qs.Values(query); ge.Check(err)
 	requestURL := requestPATH +  "?" + queryValues.Encode()
-	res, err := http.Get(requestURL); so.C(err)
+	res, err := http.Get(requestURL); ge.Check(err)
 	if res != nil {
 		defer res.Body.Close()
 	}
-	body, err := ioutil.ReadAll(res.Body); so.C(err)
+	body, err := ioutil.ReadAll(res.Body); ge.Check(err)
 	var resData apiResponse
-	err = json.Unmarshal(body, &resData); so.C(err)
+	err = json.Unmarshal(body, &resData); ge.Check(err)
 	if resData.ErrCode != 0 {
 		panic(errors.New(fmt.Sprintf("%#v", resData)))
 	}
 	accessToken = resData.AccessToken
-	// 减去30秒是防御措施，防止access token 失效前一秒进行请求网络返回 token 失效
-	this.Cache.Write(this.getCacheKeyGetAccessToken(), accessToken, time.Duration(resData.ExpiresIn - 30) * time.Second)
+	// 减去120秒是防御措施，防止access token 失效前一秒进行请求网络返回 token 失效
+	this.Hook.AccessTokenWriteStorage(this.getCacheKeyGetAccessToken(), accessToken, time.Duration(resData.ExpiresIn - 120) * time.Second)
 	return accessToken
 }
 // 长链接转短链接接口
@@ -112,19 +115,19 @@ func (this Wechat) GetShortURL (longURL string) (shortURL string)  {
 		Action: "long2short", // 此处填long2short，代表长链接转短链接
 		LongURL: longURL,
 	}
-	paramJSON, err := json.Marshal(param); so.C(err)
-	queryValues, err := qs.Values(query); so.C(err)
+	paramJSON, err := json.Marshal(param); ge.Check(err)
+	queryValues, err := qs.Values(query); ge.Check(err)
 	requestURL := requestPATH +  "?" + queryValues.Encode()
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(paramJSON)); so.C(err)
+	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(paramJSON)); ge.Check(err)
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
-	res, err := client.Do(req); so.C(err)
+	res, err := client.Do(req); ge.Check(err)
 	if res != nil {
 		defer res.Body.Close()
 	}
-	body, err := ioutil.ReadAll(res.Body); so.C(err)
+	body, err := ioutil.ReadAll(res.Body); ge.Check(err)
 	var respData apiResponse
-	err = json.Unmarshal(body, &respData); so.C(err)
+	err = json.Unmarshal(body, &respData); ge.Check(err)
 	if respData.ErrCode != 0 {
 		panic(errors.New(fmt.Sprintf("%#v", respData)))
 	}
