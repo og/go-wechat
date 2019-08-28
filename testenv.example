@@ -1,4 +1,4 @@
-package wechat
+package gwechat
 
 // 通过 接口测试号申请 获取加密信息替换到下面的 xxxxxxxx 中
 // https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421137522

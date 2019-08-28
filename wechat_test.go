@@ -1,34 +1,45 @@
-package wechat
+package gwechat
 
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-var wechat = Wechat{
+
+var wechat = New(Config{
 	APPID: EnvAPPID,
 	APPSecret: EnvAPPSecret,
-	Hook: DefaultHook(),
-}
+})
 
-
-
-func TestUnsafeGetAccessToken (t *testing.T) {
-	firstAccessToken := wechat.UnsafeGetAccessToken()
-	tokenLen := len(firstAccessToken)
-	assert.EqualValues(t, 136<= tokenLen && tokenLen <= 157,true)
-	// check cache
-	secondAccessToken := wechat.UnsafeGetAccessToken()
-	assert.Equal(t, firstAccessToken, secondAccessToken)
-}
+// func TestCentralControlServerGetAccessToken (t *testing.T) {
+// 	wechatError := New(Config{
+// 		APPID: "",
+// 		APPSecret: "",
+// 	})
+// 	_, errRes := wechatError.CentralControlServerGetAccessToken()
+// 	assert.Equal(t,	len(errRes.ErrMsg) != 0, true)
+// 	assert.Equal(t, true, errRes.Fail)
+// 	assert.Equal(t, 41002, errRes.ErrCode)
+// }
+// func TestUnsafeGetAccessToken (t *testing.T) {
+// 	firstAccessToken, errRes := wechat.UnsafeCentralControlServerGetAccessToken()
+// 	assert.Equal(t, ErrResponse{Fail: false, ErrCode:0, ErrMsg:"",}, errRes)
+// 	tokenLen := len(firstAccessToken)
+// 	assert.EqualValues(t, 136<= tokenLen && tokenLen <= 157,true)
+// 	// check cache
+// 	secondAccessToken, errRes:= wechat.UnsafeCentralControlServerGetAccessToken()
+// 	assert.Equal(t, firstAccessToken, secondAccessToken)
+// 	assert.Equal(t, ErrResponse{Fail: false, ErrCode:0, ErrMsg:"",}, errRes)
+// }
 
 func TestGetShortURL (t *testing.T) {
 	// https://w.url.cn/s/A7b7sXQ
-	firstShortURL := wechat.GetShortURL("https://github.com/og")
+	firstShortURL, errRes := wechat.GetShortURL("https://github.com/og")
 	assert.Regexp(t, "^https://w\\.url\\.cn/.*", firstShortURL)
+	assert.Equal(t, ErrResponse{Fail: false, ErrCode:0, ErrMsg:"",}, errRes)
 	// check cache
-	secondShortURL := wechat.GetShortURL("https://github.com/og")
-	assert.Regexp(t, firstShortURL, secondShortURL)
+	// secondShortURL := wechat.GetShortURL("https://github.com/og")
+	// assert.Regexp(t, firstShortURL, secondShortURL)
 }
 
 func TestWechat_WebRedirectAuthorize(t *testing.T) {

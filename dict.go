@@ -1,6 +1,6 @@
-package wechat
+package gwechat
 
-import "github.com/og/godict"
+import "github.com/og/go-dict"
 type dictStruct struct {
 	WebRedirectAuthorize struct{
 		Scope struct{
