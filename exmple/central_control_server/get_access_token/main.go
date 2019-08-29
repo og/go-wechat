@@ -19,7 +19,7 @@ func getMD5(v string) string {
 type wechatHook struct {}
 func (self wechatHook) GetAccessToken(appID string, appSecret string) (accessToken string , err error) {
 
-	url := "http://localhost:6136/api/wechat/get_access_token?appid=" + appID + "&hash=" + getMD5(appID + appSecret)
+	url := "http://localhost:6136/api/wechat/project_name/get_access_token?appid=" + appID + "&hash=" + getMD5(appID + appSecret)
 	ressource, err := http.Get(url)
 	if err != nil { return "", err }
 	if ressource != nil {

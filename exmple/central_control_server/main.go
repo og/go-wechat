@@ -10,7 +10,7 @@ import (
 )
 
 func main () {
-	apiWechatGetAccessTokenURL := "/api/wechat/get_access_token"
+	apiWechatGetAccessTokenURL := "/api/wechat/project_name/get_access_token"
 	http.HandleFunc(apiWechatGetAccessTokenURL, GetAccessTokenCtrl)
 	port := "6136"
 	log.Print("Listen: http://localhost:"+ port + apiWechatGetAccessTokenURL)

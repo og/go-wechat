@@ -19,6 +19,10 @@ type Wechat struct {
 	hook Hook
 }
 
+type wechatErrorJSON struct {
+	ErrCode int `json:"errcode"`
+	ErrMsg string `json:"errmsg"`
+}
 type Hook interface {
 	GetAccessToken (appID string, appSecret string) (accessToken string , err error)
 }
@@ -40,7 +44,6 @@ func New (config Config) Wechat {
 func (this Wechat) GetAccessToken () (accessToken string, err error) {
 	return this.hook.GetAccessToken(this.appID, this.appSecret)
 }
-
 
 // 长链接转短链接接口
 // https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1443433600
@@ -95,12 +98,11 @@ func (this Wechat) GetShortURL (longURL string) (shortURL string, errRes ErrResp
 }
 
 
-// 微信网页授权第一步跳转
+// 微信网页授权(第一步：用户同意授权，获取code)
 // https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421140842
 // scope 参数使用 wecaht.Dict().WebRedirectAuthorize.Scope 传递
 // redirectURI 授权后重定向的回调链接地址, 函数内部已进行 urlEncode 操作，调用方无需 urlEncode
 // state 重定向后会带上state参数，开发者可以填写a-zA-Z0-9的参数值，最多128字节
-
 // 成功后如果用户同意授权，页面将跳转至 redirect_uri/?code=CODE&state=STATE。
 func (this Wechat) WebRedirectAuthorize(scope string, redirectURI string, state string) string {
 	type queryT struct {
@@ -119,4 +121,81 @@ func (this Wechat) WebRedirectAuthorize(scope string, redirectURI string, state 
 	}
 	querystring, err := qs.Values(query) ; ge.Check(err)
 	return "https://open.weixin.qq.com/connect/oauth2/authorize?" + querystring.Encode() + "#wechat_redirect"
+}
+
+
+// 微信网页授权(第二步：通过code换取网页授权access_token)
+// https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421140842
+type WebAccessTokenResponse  struct {
+	wechatErrorJSON
+	AccessToken string `json:"access_token"`
+	ExpiresIn int `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+	OpenID string `json:"openid"`
+	Scope string `json:"scope"`
+}
+func (this Wechat) WebAccessToken(code string) (webAccessTokenResponse WebAccessTokenResponse, errRes ErrResponse) {
+	type queryT struct {
+		Code string `url:"code"`
+		APPID string `url:"appid"`
+		Secret string `url:"secret"`
+		GrantType string `url:"grant_type"`
+	}
+	query := queryT{
+		Code:      code,
+		APPID:     this.appID,
+		Secret:    this.appSecret,
+		GrantType: "authorization_code",
+	}
+	querystring, err := qs.Values(query); ge.Check(err)
+	requestURL := apiDomain + "/sns/oauth2/access_token" + "?" + querystring.Encode()
+	resp, err := http.Get(requestURL); ge.Check(err)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body); ge.Check(err)
+	err = json.Unmarshal(body, &webAccessTokenResponse); ge.Check(err)
+	if webAccessTokenResponse.ErrCode != 0 {
+		errRes.ErrCode = webAccessTokenResponse.ErrCode
+		errRes.ErrMsg = webAccessTokenResponse.ErrMsg
+		return
+	}
+	return
+}
+
+type WebUserInfoResponse struct {
+	wechatErrorJSON
+	OpenID string `json:"openid"`
+	Nickname string `json:"nickname"`
+	Sex string `json:"sex"`
+	Province string `json:"province"`
+	City string `json:"city"`
+	Country string `json:"country"`
+	HeadIMGURL string `json:"headimgurl"`
+	Privilege []string `json:"privilege"`
+	Unionid string `json:"unionid"`
+}
+// 微信网页授权(第四步：拉取用户信息(需scope为 snsapi_userinfo))
+func (this Wechat) WebGetUserInfo(accessToken string, openID string, lang string) (wechatRes WebUserInfoResponse, errRes ErrResponse) {
+	type request struct {
+		AccessToken string `url:"access_token"`
+		OpenID string `url:"openid"`
+		Lang string `url:"lang"`
+	}
+	query := request{
+		AccessToken: accessToken,
+		OpenID: openID,
+		Lang: lang,
+	}
+	querystring, err := qs.Values(query); ge.Check(err)
+	requestURL := apiDomain + "/sns/userinfo" + "?" + querystring.Encode()
+	resp, err := http.Get(requestURL); ge.Check(err)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body); ge.Check(err)
+	err = json.Unmarshal(body, &wechatRes); ge.Check(err)
+	if wechatRes.ErrCode !=0 {
+		errRes.Fail = true
+		errRes.ErrCode = wechatRes.ErrCode
+		errRes.ErrMsg = wechatRes.ErrMsg
+		return
+	}
+	return
 }

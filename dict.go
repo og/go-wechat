@@ -8,6 +8,13 @@ type dictStruct struct {
 			SnsapiUserinfo string `dict:"snsapi_userinfo"`
 		}
 	}
+	WebUserInfo struct{
+		Lang struct{
+			ZHCN string `dict:"zh_CN"`
+			ZHTW string `dict:"zh_TW"`
+			EN string `dict:"en"`
+		}
+	}
 }
 var dict = dictStruct{}
 func init () {
