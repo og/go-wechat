@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/json"
+	"fmt"
 	gwechat "github.com/og/go-wechat"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -9,9 +11,16 @@ import (
 	"net/http"
 )
 
+func getMD5(v string) string {
+	md5Byte := md5.Sum([]byte(v))
+	return fmt.Sprintf("%x", md5Byte)
+}
+
 type wechatHook struct {}
-func (self wechatHook) GetAccessToken(appID string) (accessToken string , err error) {
-	ressource, err := http.Get("http://localhost:6136/api/wechat/get_access_token?appid=" + appID)
+func (self wechatHook) GetAccessToken(appID string, appSecret string) (accessToken string , err error) {
+
+	url := "http://localhost:6136/api/wechat/get_access_token?appid=" + appID + "&hash=" + getMD5(appID + appSecret)
+	ressource, err := http.Get(url)
 	if err != nil { return "", err }
 	if ressource != nil {
 		defer ressource.Body.Close()

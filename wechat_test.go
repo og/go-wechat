@@ -1,6 +1,7 @@
 package gwechat
 
 import (
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -9,28 +10,16 @@ import (
 var wechat = New(Config{
 	APPID: EnvAPPID,
 	APPSecret: EnvAPPSecret,
+	Hook: wechatHook{},
 })
 
-// func TestCentralControlServerGetAccessToken (t *testing.T) {
-// 	wechatError := New(Config{
-// 		APPID: "",
-// 		APPSecret: "",
-// 	})
-// 	_, errRes := wechatError.CentralControlServerGetAccessToken()
-// 	assert.Equal(t,	len(errRes.ErrMsg) != 0, true)
-// 	assert.Equal(t, true, errRes.Fail)
-// 	assert.Equal(t, 41002, errRes.ErrCode)
-// }
-// func TestUnsafeGetAccessToken (t *testing.T) {
-// 	firstAccessToken, errRes := wechat.UnsafeCentralControlServerGetAccessToken()
-// 	assert.Equal(t, ErrResponse{Fail: false, ErrCode:0, ErrMsg:"",}, errRes)
-// 	tokenLen := len(firstAccessToken)
-// 	assert.EqualValues(t, 136<= tokenLen && tokenLen <= 157,true)
-// 	// check cache
-// 	secondAccessToken, errRes:= wechat.UnsafeCentralControlServerGetAccessToken()
-// 	assert.Equal(t, firstAccessToken, secondAccessToken)
-// 	assert.Equal(t, ErrResponse{Fail: false, ErrCode:0, ErrMsg:"",}, errRes)
-// }
+type wechatHook struct {}
+var accessTokenMemoryCache = &AccessTokenMemoryCache{}
+func (self wechatHook) GetAccessToken(appID string, appSecret string) (accessToken string , err error) {
+	accessToken, errRes := UnsafeGetAccessToken(appID, appSecret, accessTokenMemoryCache)
+	if errRes.Fail { return  "", errors.New(errRes.ErrMsg) }
+	return
+}
 
 func TestGetShortURL (t *testing.T) {
 	// https://w.url.cn/s/A7b7sXQ

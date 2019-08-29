@@ -20,7 +20,7 @@ type Wechat struct {
 }
 
 type Hook interface {
-	GetAccessToken (appID string) (accessToken string , err error)
+	GetAccessToken (appID string, appSecret string) (accessToken string , err error)
 }
 type Config struct {
 	APPID string
@@ -38,7 +38,7 @@ func New (config Config) Wechat {
 
 // 获取中控制平台的 access_token
 func (this Wechat) GetAccessToken () (accessToken string, err error) {
-	return this.hook.GetAccessToken(this.appID)
+	return this.hook.GetAccessToken(this.appID, this.appSecret)
 }
 
 
@@ -59,7 +59,7 @@ func (this Wechat) GetShortURL (longURL string) (shortURL string, errRes ErrResp
 		ShortURL string `json:"short_url"`
 	}
 	requestPATH := apiDomain + apiPath
-	accessToken , err := this.hook.GetAccessToken(this.appID)
+	accessToken , err := this.GetAccessToken()
 	if err != nil {
 		errRes.ErrMsg = err.Error()
 		return "", errRes
