@@ -6,6 +6,7 @@ import (
 	qs "github.com/google/go-querystring/query"
 	ge "github.com/og/go-error"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 // 接口域名说明
@@ -99,7 +100,7 @@ func (this Wechat) GetShortURL (longURL string) (shortURL string, errRes ErrResp
 
 
 // 微信网页授权(第一步：用户同意授权，获取code)
-// https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421140842
+// https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/Wechat_webpage_authorization.html#0
 // scope 参数使用 wecaht.Dict().WebRedirectAuthorize.Scope 传递
 // redirectURI 授权后重定向的回调链接地址, 函数内部已进行 urlEncode 操作，调用方无需 urlEncode
 // state 重定向后会带上state参数，开发者可以填写a-zA-Z0-9的参数值，最多128字节
@@ -125,7 +126,7 @@ func (this Wechat) WebRedirectAuthorize(scope string, redirectURI string, state 
 
 
 // 微信网页授权(第二步：通过code换取网页授权access_token)
-// https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421140842
+// https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/Wechat_webpage_authorization.html#1
 type WebAccessTokenResponse  struct {
 	wechatErrorJSON
 	AccessToken string `json:"access_token"`
@@ -154,6 +155,7 @@ func (this Wechat) WebAccessToken(code string) (webAccessTokenResponse WebAccess
 	body, err := ioutil.ReadAll(resp.Body); ge.Check(err)
 	err = json.Unmarshal(body, &webAccessTokenResponse); ge.Check(err)
 	if webAccessTokenResponse.ErrCode != 0 {
+		errRes.Fail = true
 		errRes.ErrCode = webAccessTokenResponse.ErrCode
 		errRes.ErrMsg = webAccessTokenResponse.ErrMsg
 		return
@@ -165,15 +167,16 @@ type WebUserInfoResponse struct {
 	wechatErrorJSON
 	OpenID string `json:"openid"`
 	Nickname string `json:"nickname"`
-	Sex string `json:"sex"`
+	Sex int `json:"sex"`
 	Province string `json:"province"`
 	City string `json:"city"`
 	Country string `json:"country"`
 	HeadIMGURL string `json:"headimgurl"`
 	Privilege []string `json:"privilege"`
-	Unionid string `json:"unionid"`
+	Unionid string `json:"unionid";comment:"只有在用户将公众号绑定到微信开放平台帐号后，才会出现该字段。https://open.weixin.qq.com/cgi-bin/index?t=home/index&lang=zh_CN&token=3910897fc2d64d5279f371701325a78824caac9b"`
 }
 // 微信网页授权(第四步：拉取用户信息(需scope为 snsapi_userinfo))
+// https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/Wechat_webpage_authorization.html#3
 func (this Wechat) WebGetUserInfo(accessToken string, openID string, lang string) (wechatRes WebUserInfoResponse, errRes ErrResponse) {
 	type request struct {
 		AccessToken string `url:"access_token"`
@@ -190,6 +193,7 @@ func (this Wechat) WebGetUserInfo(accessToken string, openID string, lang string
 	resp, err := http.Get(requestURL); ge.Check(err)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body); ge.Check(err)
+	log.Print(string(body))
 	err = json.Unmarshal(body, &wechatRes); ge.Check(err)
 	if wechatRes.ErrCode !=0 {
 		errRes.Fail = true

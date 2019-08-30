@@ -35,7 +35,7 @@ func main () {
 			_, _ = w.Write([]byte("请带上 scope 参数"))
 			return
 		}
-		redirectURL := wechat.WebRedirectAuthorize(scope, WechatAuthDomain + "/get_access_token", "CustomState:"+ scope)
+		redirectURL := wechat.WebRedirectAuthorize(scope, WechatAuthDomain + "/get_access_token", scope)// 第三个参数 state 设置为 scope 表明授权类型
 		// var photo []byte
 		// photo, err := qrcode.Encode(redirectURL, qrcode.Medium, 256) ; ge.Check(err)
 		// _, _ = w.Write(photo)
@@ -48,19 +48,22 @@ func main () {
 		err := r.ParseForm() ; ge.Check(err)
 		code := r.Form.Get("code")
 		state := r.Form.Get("state")
-		_ = state
-		accessTokenWechatRes, errRes := wechat.WebAccessToken(code)
+		var accessTokenWechatRes gwechat.WebAccessTokenResponse
+		var webGetUserInfoRes gwechat.WebUserInfoResponse
+		var errRes gwechat.ErrResponse
+		// 只获取 openid 等基础信息
+		accessTokenWechatRes, errRes = wechat.WebAccessToken(code)
 		if errRes.Fail {
-			_, _ = w.Write(gjson.Byte(gjson.FailMsg(errRes.ErrMsg)))
+			_, _ = w.Write(gjson.Byte(gjson.FailMsg("WebAccessToken err: " + errRes.ErrMsg)))
 			return
 		}
-		var webGetUserInfoRes gwechat.WebUserInfoResponse
-		// 进一步授权获取信息
-		if accessTokenWechatRes.Scope == gwechat.Dict().WebRedirectAuthorize.Scope.SnsapiUserinfo {
+		switch state {
+		case gwechat.Dict().WebRedirectAuthorize.Scope.SnsapiUserinfo:
+			// 获取详细微信信息
 			webGetUserInfoRes, errRes = wechat.WebGetUserInfo(accessTokenWechatRes.AccessToken, accessTokenWechatRes.OpenID, gwechat.Dict().WebUserInfo.Lang.ZHCN)
 			if errRes.Fail {
 				log.Print("第四步：拉取用户信息(需scope为 snsapi_userinfo) 错误")
-				_, _ = w.Write(gjson.Byte(gjson.FailMsg(errRes.ErrMsg)))
+				_, _ = w.Write(gjson.Byte(gjson.FailMsg("accessTokenWechatRes err: " + errRes.ErrMsg)))
 				return
 			}
 		}
