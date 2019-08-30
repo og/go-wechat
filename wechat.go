@@ -26,6 +26,7 @@ type wechatErrorJSON struct {
 }
 type Hook interface {
 	GetAccessToken (appID string, appSecret string) (accessToken string , err error)
+	GetJSAPITicket(appID string, appSecret string) (ticket string, err error)
 }
 type Config struct {
 	APPID string
@@ -44,6 +45,11 @@ func New (config Config) Wechat {
 // 获取中控制平台的 access_token
 func (this Wechat) GetAccessToken () (accessToken string, err error) {
 	return this.hook.GetAccessToken(this.appID, this.appSecret)
+}
+
+// 获取中控制平台的 jsapi_ticket
+func (this Wechat) GetJSAPITicket () (accessToken string, err error) {
+	return this.hook.GetJSAPITicket(this.appID, this.appSecret)
 }
 
 // 长链接转短链接接口

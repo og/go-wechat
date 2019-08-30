@@ -14,7 +14,7 @@ var wechat = New(Config{
 })
 
 type wechatHook struct {}
-var accessTokenMemoryCache = &AccessTokenMemoryCache{}
+var accessTokenMemoryCache = &MemoryCache{}
 func (self wechatHook) GetAccessToken(appID string, appSecret string) (accessToken string , err error) {
 	accessToken, errRes := UnsafeGetAccessToken(appID, appSecret, accessTokenMemoryCache)
 	if errRes.Fail { return  "", errors.New(errRes.ErrMsg) }
@@ -37,8 +37,8 @@ func TestWechat_WebRedirectAuthorize(t *testing.T) {
 			Dict().WebRedirectAuthorize.Scope.SnsapiBase,
 			"https://github.com/og/gowecaht",
 			"WECHAT_AUTH",
-
-		assert.Equal(t, "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx25076a02429daba9&redirect_uri=https%3A%2F%2Fgithub.com%2Fog%2Fgowecaht&response_type=code&scope=snsapi_base&state=WECHAT_AUTH#wechat_redirect", url)
+		)
+		assert.Equal(t, "https://open.weixin.qq.com/connect/oauth2/authorize?appid=" + EnvAPPID + "&redirect_uri=https%3A%2F%2Fgithub.com%2Fog%2Fgowecaht&response_type=code&scope=snsapi_base&state=WECHAT_AUTH#wechat_redirect", url)
 	}
 	{
 		url := wechat.WebRedirectAuthorize(
@@ -46,13 +46,13 @@ func TestWechat_WebRedirectAuthorize(t *testing.T) {
 			"https://github.com/og/gowecaht?a=1&b=2",
 			"WECHAT_AUTH",
 		)
-		assert.Equal(t, "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx25076a02429daba9&redirect_uri=https%3A%2F%2Fgithub.com%2Fog%2Fgowecaht%3Fa%3D1%26b%3D2&response_type=code&scope=snsapi_base&state=WECHAT_AUTH#wechat_redirect", url)
+		assert.Equal(t, "https://open.weixin.qq.com/connect/oauth2/authorize?appid=" + EnvAPPID + "&redirect_uri=https%3A%2F%2Fgithub.com%2Fog%2Fgowecaht%3Fa%3D1%26b%3D2&response_type=code&scope=snsapi_base&state=WECHAT_AUTH#wechat_redirect", url)
 	}
 }
 
 func TestWechat_CodeAccessToken(t *testing.T) {
 	code := "0712lV2W1Eyt1Y0cc51W1NwR2W12lV2n"
-	wechat.CodeAccessToken(code)
+	wechat.WebAccessToken(code)
 }
 
 //

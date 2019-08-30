@@ -35,7 +35,7 @@ func main () {
 			_, _ = w.Write([]byte("请带上 scope 参数"))
 			return
 		}
-		redirectURL := wechat.WebRedirectAuthorize(scope, WechatAuthDomain + "/get_access_token", scope)// 第三个参数 state 设置为 scope 表明授权类型
+		redirectURL := wechat.WebRedirectAuthorize(scope, WechatAuthDomain + "/call", scope)// 第三个参数 state 设置为 scope 表明授权类型
 		// var photo []byte
 		// photo, err := qrcode.Encode(redirectURL, qrcode.Medium, 256) ; ge.Check(err)
 		// _, _ = w.Write(photo)
@@ -44,7 +44,7 @@ func main () {
 		// http.Redirect(w, r, redirectURL ,http.StatusTemporaryRedirect)
 	})
 
-	http.HandleFunc("/get_access_token", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/call", func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm() ; ge.Check(err)
 		code := r.Form.Get("code")
 		state := r.Form.Get("state")
