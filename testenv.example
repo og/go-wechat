@@ -4,5 +4,8 @@ package gwechat
 // https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421137522
 // 然后新建文件 testenv.go 即可运行单元测试
 // 不要删除 testenv.go.example 要留着作为示例
-var EnvAPPID = "xxxxxxxxxxxxxxxxxxxxxxxx"
-var EnvAPPSecret = "xxxxxxxxxxxxxxxxxxxx"
+var TestEnvAPPID = "xxxxxxxxxxxxxxxxxxxxxxxx"
+var TestEnvAPPSecret = "xxxxxxxxxxxxxxxxxxxx"
+
+// 每次测试需要更换微信小程序客户端获取的code
+var TestWeappClientCode = ""

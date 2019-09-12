@@ -25,8 +25,8 @@ type wechatErrorJSON struct {
 	ErrMsg string `json:"errmsg"`
 }
 type Hook interface {
-	GetAccessToken (appID string, appSecret string) (accessToken string , err error)
-	GetJSAPITicket(appID string, appSecret string) (ticket string, err error)
+	GetAccessToken (appID string, appSecret string) (accessToken string , err ErrResponse)
+	GetJSAPITicket(appID string, appSecret string, accessToken string) (ticket string, err ErrResponse)
 }
 type Config struct {
 	APPID string
@@ -43,13 +43,15 @@ func New (config Config) Wechat {
 }
 
 // 获取中控制平台的 access_token
-func (this Wechat) GetAccessToken () (accessToken string, err error) {
+func (this Wechat) GetAccessToken () (accessToken string, err ErrResponse) {
 	return this.hook.GetAccessToken(this.appID, this.appSecret)
 }
 
 // 获取中控制平台的 jsapi_ticket
-func (this Wechat) GetJSAPITicket () (accessToken string, err error) {
-	return this.hook.GetJSAPITicket(this.appID, this.appSecret)
+func (this Wechat) GetJSAPITicket () (ticket string, err ErrResponse) {
+	accessToken, err := this.GetAccessToken()
+	if err.Fail {return "",err}
+	return this.hook.GetJSAPITicket(this.appID, this.appSecret, accessToken)
 }
 
 // 长链接转短链接接口
@@ -69,9 +71,8 @@ func (this Wechat) GetShortURL (longURL string) (shortURL string, errRes ErrResp
 		ShortURL string `json:"short_url"`
 	}
 	requestPATH := apiDomain + apiPath
-	accessToken , err := this.GetAccessToken()
-	if err != nil {
-		errRes.ErrMsg = err.Error()
+	accessToken , errRes := this.GetAccessToken()
+	if errRes.Fail {
 		return "", errRes
 	}
 	query := apiQuery{
@@ -142,13 +143,12 @@ type WebAccessTokenResponse  struct {
 	Scope string `json:"scope"`
 }
 func (this Wechat) WebAccessToken(code string) (webAccessTokenResponse WebAccessTokenResponse, errRes ErrResponse) {
-	type queryT struct {
+	query := struct {
 		Code string `url:"code"`
 		APPID string `url:"appid"`
 		Secret string `url:"secret"`
 		GrantType string `url:"grant_type"`
-	}
-	query := queryT{
+	}{
 		Code:      code,
 		APPID:     this.appID,
 		Secret:    this.appSecret,
@@ -205,6 +205,40 @@ func (this Wechat) WebGetUserInfo(accessToken string, openID string, lang string
 		errRes.Fail = true
 		errRes.ErrCode = wechatRes.ErrCode
 		errRes.ErrMsg = wechatRes.ErrMsg
+		return
+	}
+	return
+}
+type WeappCode2SessionResponse struct {
+	wechatErrorJSON
+	OpenID string `json:"openid"`
+	SessionKey string `json:"session_key"`
+}
+// 微信小程序登录
+// https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/login/auth.code2Session.html
+// 本函数没有返回 unionid 因为根据场景不同微信不一定会返回 unionid
+func (this Wechat) WeappCode2Session(code string) (res WeappCode2SessionResponse, errRes ErrResponse) {
+	query := struct {
+		Code string `url:"js_code"`
+		APPID string `url:"appid"`
+		Secret string `url:"secret"`
+		GrantType string `url:"grant_type"`
+	}{
+		Code:      code,
+		APPID:     this.appID,
+		Secret:    this.appSecret,
+		GrantType: "authorization_code",
+	}
+	querystring, err := qs.Values(query); ge.Check(err)
+	requestURL := apiDomain + "/sns/jscode2session" + "?" + querystring.Encode()
+	resp, err := http.Get(requestURL); ge.Check(err)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body); ge.Check(err)
+	err = json.Unmarshal(body, &res); ge.Check(err)
+	if res.ErrCode != 0 {
+		errRes.Fail = true
+		errRes.ErrCode = res.ErrCode
+		errRes.ErrMsg = res.ErrMsg
 		return
 	}
 	return

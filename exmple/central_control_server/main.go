@@ -42,8 +42,8 @@ func GetKeyCtrl (w http.ResponseWriter, r *http.Request) {
 		if err != nil { http.Error(w, fmt.Sprint(err), http.StatusInternalServerError); return }
 	}()
 	// 这里换成你自己的 appid 和 appSecret
-	appID := gwechat.EnvAPPID
-	appSecret := gwechat.EnvAPPSecret
+	appID := gwechat.TestEnvAPPID
+	appSecret := gwechat.TestEnvAPPSecret
 	correctHash := getMD5(appID + appSecret)
 	w.Header().Set("Content-Type", "application/json")
 	err := r.ParseForm() ; ge.Check(err)

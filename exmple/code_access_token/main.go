@@ -11,13 +11,13 @@ import (
 )
 
 var wechat = gwechat.New(gwechat.Config{
-	APPID: gwechat.EnvAPPID,
-	APPSecret: gwechat.EnvAPPSecret,
+	APPID: gwechat.TestTestEnvAPPID,
+	APPSecret: gwechat.TestEnvAPPSecret,
 	Hook: wechatHook{},
 })
 
 type wechatHook struct {}
-var accessTokenMemoryCache = &gwechat.AccessTokenMemoryCache{}
+var accessTokenMemoryCache = &gwechat.MemoryCache{}
 func (self wechatHook) GetAccessToken(appID string, appSecret string) (accessToken string , err error) {
 	accessToken, errRes := gwechat.UnsafeGetAccessToken(appID, appSecret, accessTokenMemoryCache)
 	if errRes.Fail { return  "", errors.New(errRes.ErrMsg) }

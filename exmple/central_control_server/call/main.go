@@ -75,8 +75,8 @@ func GetJSAPIConfig(url string, jsapiTicket string, appID string) JSAPIConfig {
 	return jsAPIConfig
 }
 func main () {
-	appID := gwechat.EnvAPPID // 这里换成你自己的 appid
-	appSecret := gwechat.EnvAPPSecret // 这里换成你自己的 appSecret
+	appID := gwechat.TestEnvAPPID // 这里换成你自己的 appid
+	appSecret := gwechat.TestEnvAPPSecret // 这里换成你自己的 appSecret
 	var wechat = gwechat.New(gwechat.Config{
 		APPID: appID,
 		APPSecret: appSecret,
