@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	gjson "github.com/og/go-json"
 	grand "github.com/og/go-rand"
 	gwechat "github.com/og/go-wechat"
 	"github.com/pkg/errors"
@@ -20,40 +21,40 @@ func getMD5(v string) string {
 	return fmt.Sprintf("%x", md5Byte)
 }
 
-type wechatHook struct {}
-func (self wechatHook) GetAccessToken(appID string, appSecret string) (accessToken string , err error) {
+type projectNameWechatcenterService struct {}
+func (self projectNameWechatcenterService) GetAccessToken(appID string, appSecret string) (accessToken string , errRes gwechat.ErrResponse) {
 	url := "http://localhost:6136/api/wechat/project_name/get_key?type=access_token&hash=" + getMD5(appID + appSecret)
 	ressource, err := http.Get(url)
-	if err != nil { return "", err }
-	if ressource != nil {
-		defer ressource.Body.Close()
-	}
-	body, err := ioutil.ReadAll(ressource.Body) ; if err != nil { return "", err }
+	if err != nil { errRes.SetSystemError(err); return "",errRes  }
+	defer ressource.Body.Close()
+	body, err := ioutil.ReadAll(ressource.Body) ; if err != nil { errRes.SetSystemError(err); return "", errRes }
 	var res gwechat.WecahtCentralControlServiceRes
-	err = json.Unmarshal(body, &res) ; if err != nil { return "", err }
+	err = json.Unmarshal(body, &res) ; if err != nil { errRes.SetSystemError(err); return "", errRes  }
 	switch res.Type {
 	case "pass":
-		return res.Data.AccessToken, nil
+		return res.Data.AccessToken, errRes
 	case "fail":
-		return "", errors.New(res.Msg)
+		errRes.SetSystemError(errors.New(res.Msg))
+		return "", errRes
 	}
 	return
 }
-func (self wechatHook) GetJSAPITicket(appID string, appSecret string) (ticket string, err error) {
+func (self projectNameWechatcenterService) GetJSAPITicket(appID string, appSecret string) (ticket string, errRes gwechat.ErrResponse) {
 	url := "http://localhost:6136/api/wechat/project_name/get_key?type=jsapi_ticket&hash=" + getMD5(appID + appSecret)
 	ressource, err := http.Get(url)
-	if err != nil { return "", err }
+	if err != nil { errRes.SetSystemError(err) ; return "", errRes }
 	if ressource != nil {
 		defer ressource.Body.Close()
 	}
-	body, err := ioutil.ReadAll(ressource.Body) ; if err != nil { return "", err }
+	body, err := ioutil.ReadAll(ressource.Body) ; if err != nil { errRes.SetSystemError(err); return "", errRes  }
 	var res gwechat.WecahtCentralControlServiceRes
-	err = json.Unmarshal(body, &res) ; if err != nil { return "", err }
+	err = json.Unmarshal(body, &res) ; if err != nil { errRes.SetSystemError(err) ; return "", errRes }
 	switch res.Type {
 	case "pass":
-		return res.Data.JSAPITicket, nil
+		return res.Data.JSAPITicket, errRes
 	case "fail":
-		return "", errors.New(res.Msg)
+		errRes.SetSystemError(errors.New(res.Msg))
+		return "", errRes
 	}
 	return
 }
@@ -80,13 +81,13 @@ func main () {
 	var wechat = gwechat.New(gwechat.Config{
 		APPID: appID,
 		APPSecret: appSecret,
-		Hook: wechatHook{},
+		CenterService: projectNameWechatcenterService{},
 	})
-	accessToken, has := wechat.GetAccessToken()
-	log.Print("accessToken ", accessToken, has)
+	accessToken, errRes := wechat.GetAccessToken()
+	log.Print("GetAccessToken ", accessToken, errRes)
 
-	jsapiTicket, has := wechat.GetJSAPITicket()
-	log.Print("jsapiTicket ", jsapiTicket, has)
+	jsapiTicket, errRes := wechat.GetJSAPITicket()
+	log.Print("GetJSAPITicket ", jsapiTicket, errRes)
 	jsapiConfig := GetJSAPIConfig("https://github.com/og", jsapiTicket, appID)
-	log.Print(jsapiConfig)
+	log.Print("GetJSAPIConfig ", gjson.StringUnfold(jsapiConfig))
 }

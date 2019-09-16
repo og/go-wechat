@@ -4,24 +4,25 @@ import (
 	ge "github.com/og/go-error"
 	gjson "github.com/og/go-json"
 	gwechat "github.com/og/go-wechat"
-	"github.com/pkg/errors"
-	qrcode "github.com/skip2/go-qrcode"
 	"log"
 	"net/http"
 )
 
 var wechat = gwechat.New(gwechat.Config{
-	APPID: gwechat.TestTestEnvAPPID,
+	APPID: gwechat.TestEnvAPPID,
 	APPSecret: gwechat.TestEnvAPPSecret,
-	Hook: wechatHook{},
+	CenterService: namePublicAccountCenterService{},
 })
+var wechatMemeberCache = gwechat.MemoryCache{}
+type namePublicAccountCenterService struct {}
+func (self namePublicAccountCenterService) GetAccessToken (appID string, appSecret string) (accessToken string , errRes gwechat.ErrResponse){
+	return gwechat.UnsafeGetAccessToken(appID, appSecret, &wechatMemeberCache)
+}
 
-type wechatHook struct {}
-var accessTokenMemoryCache = &gwechat.MemoryCache{}
-func (self wechatHook) GetAccessToken(appID string, appSecret string) (accessToken string , err error) {
-	accessToken, errRes := gwechat.UnsafeGetAccessToken(appID, appSecret, accessTokenMemoryCache)
-	if errRes.Fail { return  "", errors.New(errRes.ErrMsg) }
-	return
+func (self namePublicAccountCenterService) GetJSAPITicket(appID string, appSecret string) (ticket string, errRes gwechat.ErrResponse){
+	accessToken , errRes := self.GetAccessToken(appID, appSecret)
+	if errRes.Fail {return "", errRes}
+	return gwechat.UnsafeGetJSAPITicket(appID, accessToken, &wechatMemeberCache)
 }
 
 const port = "7315"

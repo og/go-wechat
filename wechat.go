@@ -6,7 +6,6 @@ import (
 	qs "github.com/google/go-querystring/query"
 	ge "github.com/og/go-error"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 // 接口域名说明
@@ -17,41 +16,39 @@ const alternativeAPIDomain = "https://api2.weixin.qq.com"
 type Wechat struct {
 	appID string
 	appSecret string
-	hook Hook
+	centerSerive CenterService
 }
 
 type wechatErrorJSON struct {
 	ErrCode int `json:"errcode"`
 	ErrMsg string `json:"errmsg"`
 }
-type Hook interface {
-	GetAccessToken (appID string, appSecret string) (accessToken string , err ErrResponse)
-	GetJSAPITicket(appID string, appSecret string, accessToken string) (ticket string, err ErrResponse)
+type CenterService interface {
+	GetAccessToken (appID string, appSecret string) (accessToken string , errRes ErrResponse)
+	GetJSAPITicket(appID string, appSecret string) (ticket string, errRes ErrResponse)
 }
 type Config struct {
 	APPID string
 	APPSecret string
-	Hook Hook
+	CenterService CenterService
 }
 func New (config Config) Wechat {
 	wechat := Wechat{
 		appID: config.APPID,
 		appSecret: config.APPSecret,
-		hook: config.Hook,
+		centerSerive: config.CenterService,
 	}
 	return wechat
 }
 
 // 获取中控制平台的 access_token
 func (this Wechat) GetAccessToken () (accessToken string, err ErrResponse) {
-	return this.hook.GetAccessToken(this.appID, this.appSecret)
+	return this.centerSerive.GetAccessToken(this.appID, this.appSecret)
 }
 
 // 获取中控制平台的 jsapi_ticket
 func (this Wechat) GetJSAPITicket () (ticket string, err ErrResponse) {
-	accessToken, err := this.GetAccessToken()
-	if err.Fail {return "",err}
-	return this.hook.GetJSAPITicket(this.appID, this.appSecret, accessToken)
+	return this.centerSerive.GetJSAPITicket(this.appID, this.appSecret)
 }
 
 // 长链接转短链接接口
@@ -93,15 +90,13 @@ func (this Wechat) GetShortURL (longURL string) (shortURL string, errRes ErrResp
 		defer res.Body.Close()
 	}
 	body, err := ioutil.ReadAll(res.Body); ge.Check(err)
-	var respData apiResponse
-	err = json.Unmarshal(body, &respData); ge.Check(err)
-	if respData.ErrCode != 0 {
-		errRes.Fail = true
-		errRes.ErrCode = respData.ErrCode
-		errRes.ErrMsg = respData.ErrMsg
+	var resData apiResponse
+	err = json.Unmarshal(body, &resData); ge.Check(err)
+	if resData.ErrCode != 0 {
+		errRes.SetFail(resData.ErrCode, resData.ErrMsg)
 		return "", errRes
 	}
-	shortURL = respData.ShortURL
+	shortURL = resData.ShortURL
 	return
 }
 
@@ -161,9 +156,7 @@ func (this Wechat) WebAccessToken(code string) (webAccessTokenResponse WebAccess
 	body, err := ioutil.ReadAll(resp.Body); ge.Check(err)
 	err = json.Unmarshal(body, &webAccessTokenResponse); ge.Check(err)
 	if webAccessTokenResponse.ErrCode != 0 {
-		errRes.Fail = true
-		errRes.ErrCode = webAccessTokenResponse.ErrCode
-		errRes.ErrMsg = webAccessTokenResponse.ErrMsg
+		errRes.SetFail(webAccessTokenResponse.ErrCode, webAccessTokenResponse.ErrMsg)
 		return
 	}
 	return
@@ -199,12 +192,9 @@ func (this Wechat) WebGetUserInfo(accessToken string, openID string, lang string
 	resp, err := http.Get(requestURL); ge.Check(err)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body); ge.Check(err)
-	log.Print(string(body))
 	err = json.Unmarshal(body, &wechatRes); ge.Check(err)
 	if wechatRes.ErrCode !=0 {
-		errRes.Fail = true
-		errRes.ErrCode = wechatRes.ErrCode
-		errRes.ErrMsg = wechatRes.ErrMsg
+		errRes.SetFail(wechatRes.ErrCode, wechatRes.ErrMsg)
 		return
 	}
 	return
@@ -236,9 +226,7 @@ func (this Wechat) WeappCode2Session(code string) (res WeappCode2SessionResponse
 	body, err := ioutil.ReadAll(resp.Body); ge.Check(err)
 	err = json.Unmarshal(body, &res); ge.Check(err)
 	if res.ErrCode != 0 {
-		errRes.Fail = true
-		errRes.ErrCode = res.ErrCode
-		errRes.ErrMsg = res.ErrMsg
+		errRes.SetFail(res.ErrCode, res.ErrMsg)
 		return
 	}
 	return

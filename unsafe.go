@@ -48,14 +48,15 @@ type WecahtCentralControlServiceRes struct {
 	}`json:"data"`
 }
 
-// 中央控制服务器获取access_token
-// https://developers.weixin.qq.com/doc/offiaccount/Basic_Information/Get_access_token.html
-// 多个服务端使用同一个 appid 的情况下应该只有一个服务端向微信获取  access_token，否则会导致 access_token 冲突
-// 所以公众号开发者一定要使用中控服务器统一获取和刷新access_token，其他业务逻辑服务器所使用的access_token均来自于该中控服务器，不应该各自去刷新，否则容易造成冲突，导致access_token覆盖而影响业务；
+
 type Cache interface {
 	ReadCache (key string) (value string, has bool)
 	WriteCache (key string, value string, expiration time.Duration)
 }
+// 中央控制服务器获取access_token
+// https://developers.weixin.qq.com/doc/offiaccount/Basic_Information/Get_access_token.html
+// 多个服务端使用同一个 appid 的情况下应该只有一个服务端向微信获取  access_token，否则会导致 access_token 冲突
+// 所以公众号开发者一定要使用中控服务器统一获取和刷新access_token，其他业务逻辑服务器所使用的access_token均来自于该中控服务器，不应该各自去刷新，否则容易造成冲突，导致access_token覆盖而影响业务；
 func UnsafeGetAccessToken (appID string, appSecret string, cache Cache) (accessToken string, errRes ErrResponse) {
 	cacheKey := "access_token:"+appID
 	accessToken, hasCache := cache.ReadCache(cacheKey)
@@ -89,9 +90,7 @@ func UnsafeGetAccessToken (appID string, appSecret string, cache Cache) (accessT
 	var resData apiResponse
 	err = json.Unmarshal(body, &resData); ge.Check(err)
 	if resData.ErrCode != 0 {
-		errRes.Fail = true
-		errRes.ErrCode = resData.ErrCode
-		errRes.ErrMsg = resData.ErrMsg
+		errRes.SetFail(resData.ErrCode, resData.ErrMsg)
 		return "", errRes
 	}
 	accessToken = resData.AccessToken
@@ -133,9 +132,7 @@ func UnsafeGetJSAPITicket(appID string, accessToken string, cache Cache) ( ticke
 	var resData apiResponse
 	err = json.Unmarshal(body, &resData); ge.Check(err)
 	if resData.ErrCode != 0 {
-		errRes.Fail = true
-		errRes.ErrCode = resData.ErrCode
-		errRes.ErrMsg = resData.ErrMsg
+		errRes.SetFail(resData.ErrCode, resData.ErrMsg)
 		return "", errRes
 	}
 	ticket = resData.Ticket

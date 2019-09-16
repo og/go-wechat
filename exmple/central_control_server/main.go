@@ -17,8 +17,8 @@ func main () {
 	getKeyURL := "/api/wechat/project_name/get_key"
 	http.HandleFunc(getKeyURL, GetKeyCtrl)
 	port := "6136"
-	log.Print("open http://localhost:"+ port + getKeyURL + "?hash=md5(appID+appSecret)&type=access_token")
-	log.Print("open http://localhost:"+ port + getKeyURL + "?hash=md5(appID+appSecret)&type=jsapi_ticket")
+	log.Print("open http://localhost:"+ port + getKeyURL + "?type=access_token&hash=md5(appID+appSecret)&type=access_token")
+	log.Print("open http://localhost:"+ port + getKeyURL + "?type=jsapi_ticket&hash=md5(appID+appSecret)&type=jsapi_ticket")
 	err := http.ListenAndServe(":" + port, nil)
 	if err != nil {
 		log.Print(err)
@@ -31,7 +31,7 @@ func getMD5(v string) string {
 }
 
 // 内存缓存必须放在包级别变量中
-var wechatMemoryCache = &gwechat.MemoryCache{}
+var wechatMemoryCache = gwechat.MemoryCache{}
 type GetKeyQuery struct {
 	Hash string `url:"hash"`
 	Type string `url:"type";enum:"[]string{access_token,jsapi_ticket}"`
@@ -57,12 +57,12 @@ func GetKeyCtrl (w http.ResponseWriter, r *http.Request) {
 	res.Data.Type = query.Type
 	if query.Hash != correctHash {
 		res.Type = "fail"
-		res.Msg = "error hash (hash = md5(appID + appSecret))"
+		res.Msg = "error hash (hash = md5(appID + appSecret)) 32 lower case"
 		jsonb, err := json.Marshal(&res) ; if err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
 		_, _ = w.Write(jsonb)
 		return
 	}
-	accessToken, errRes := gwechat.UnsafeGetAccessToken(appID, appSecret, wechatMemoryCache)
+	accessToken, errRes := gwechat.UnsafeGetAccessToken(appID, appSecret, &wechatMemoryCache)
 	if errRes.Fail {
 		res.Type = "fail"
 		jsonb, err :=json.Marshal(errRes) ; if err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
@@ -73,7 +73,7 @@ func GetKeyCtrl (w http.ResponseWriter, r *http.Request) {
 	switch query.Type {
 	case "access_token":
 	case "jsapi_ticket":
-		jsapiTicket, errRes := gwechat.UnsafeGetJSAPITicket(appID, res.Data.AccessToken, wechatMemoryCache)
+		jsapiTicket, errRes := gwechat.UnsafeGetJSAPITicket(appID, res.Data.AccessToken, &wechatMemoryCache)
 		if errRes.Fail {
 			http.Error(w, errRes.ErrMsg, http.StatusInternalServerError)
 			return
