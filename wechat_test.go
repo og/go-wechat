@@ -10,20 +10,23 @@ import (
 var wechat = New(Config{
 	APPID: TestEnvAPPID,
 	APPSecret: TestEnvAPPSecret,
-	Hook: &wechatHook{},
+	CenterService: namePublicAccountCenterService{},
 })
 
 type wechatHook struct {}
 var memoryCache = &MemoryCache{}
-func (hook wechatHook) GetAccessToken(appID string, appSecret string) (accessToken string , err ErrResponse) {
-	// 一个 appid 只允许有一个地方调用 UnsafeGetAccessToken
-	return
-	// return UnsafeGetAccessToken(appID, appSecret, memoryCache)
+var wechatMemeberCache = MemoryCache{}
+type namePublicAccountCenterService struct {}
+func (self namePublicAccountCenterService) GetAccessToken (appID string, appSecret string) (accessToken string , errRes ErrResponse){
+	return UnsafeGetAccessToken(appID, appSecret, &wechatMemeberCache)
 }
-func (hook wechatHook) GetJSAPITicket(appID string, appSecret string, accessToken string ) (ticket string, err ErrResponse) {
-	return
-	// return UnsafeGetJSAPITicket(appID, accessToken, memoryCache)
+
+func (self namePublicAccountCenterService) GetJSAPITicket(appID string, appSecret string) (ticket string, errRes ErrResponse){
+	accessToken , errRes := self.GetAccessToken(appID, appSecret)
+	if errRes.Fail {return "", errRes}
+	return UnsafeGetJSAPITicket(appID, accessToken, &wechatMemeberCache)
 }
+
 
 func TestGetShortURL (t *testing.T) {
 	// https://w.url.cn/s/A7b7sXQ
