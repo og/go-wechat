@@ -9,3 +9,7 @@ var TestEnvAPPSecret = "xxxxxxxxxxxxxxxxxxxx"
 
 // 每次测试需要更换微信小程序客户端获取的code
 var TestWeappClientCode = ""
+
+
+var TestMCHID = ""
+var TestMCHKey = ""

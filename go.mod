@@ -8,8 +8,9 @@ require (
 	github.com/og/go-error v0.0.1
 	github.com/og/go-json v0.0.0-20190828030157-7932013d91b7
 	github.com/og/go-log v0.0.0-20190828025828-b5e148e34e68 // indirect
-	github.com/og/go-rand v0.0.0-20190830073915-fc2ac5f95f4e // indirect
+	github.com/og/go-rand v0.0.0-20190830073915-fc2ac5f95f4e
+	github.com/og/x v0.0.0-20190918080156-5b5de0bb9d7d
 	github.com/pkg/errors v0.8.1
-	github.com/skip2/go-qrcode v0.0.0-20190110000554-dc11ecdae0a9
+	github.com/skip2/go-qrcode v0.0.0-20190110000554-dc11ecdae0a9 // indirect
 	github.com/stretchr/testify v1.4.0
 )
