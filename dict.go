@@ -2,6 +2,17 @@ package gwechat
 
 import "github.com/og/go-dict"
 type dictStruct struct {
+	PayOrderQuery struct{
+		TradeState struct {
+			SUCCESS    string `dict:"SUCCESS"note:"支付成功"`
+			REFUND     string `dict:"REFUND"note:"转入退款"`
+			NOTPAY     string `dict:"NOTPAY"note:"未支付"`
+			CLOSED     string `dict:"CLOSED"note:"已关闭"`
+			REVOKED    string `dict:"REVOKED"note:"已撤销（刷卡支付）"`
+			USERPAYING string `dict:"USERPAYING"note:"用户支付中"`
+			PAYERROR   string `dict:"PAYERROR"note:"支付失败(其他原因，如银行返回失败)"`
+		}
+	}
 	PayUnifiedorder struct{
 		DeviceInfo struct{
 			WEB string `dict:"WEB"`
