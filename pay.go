@@ -73,14 +73,7 @@ type UnifedOrderResult struct {
 	DeviceInfo string `xml:"device_info"`
 	NonceStr string `xml:"nonce_str"`
 	Sign string `xml:"sign"`
-	ClientApiConfig struct {
-		APPID string `url:"appId"json:"appId"`
-		TimeStamp string `url:"timeStamp"json:"timeStamp"`
-		NonceStr string `url:"nonceStr"json:"nonceStr"`
-		Package string `url:"package"json:"package"`
-		SignType string `url:"signType"json:"signType"`
-		PaySign string `url:"paySign"json:"paySign"`
-	}
+	PayJSAPIConfig PayJSAPIConfig
 
 }
 // https://pay.weixin.qq.com/wiki/doc/api/wxa/wxa_api.php?chapter=9_1
@@ -117,17 +110,29 @@ func (this Wechat) PayUnifiedOrder (query PayUnifiedOrderQuery) (result UnifedOr
 		payErrRes.SetError(errors.New(result.ErrCodeDes))
 		return
 	}
-	result.ClientApiConfig.APPID = query.APPID
-	result.ClientApiConfig.TimeStamp = gconv.Int64String(time.Now().Unix())
-	result.ClientApiConfig.NonceStr = grand.StringLetter(32)
-	result.ClientApiConfig.Package = "prepay_id=" + result.PrepayID
-	result.ClientApiConfig.SignType = "MD5"
-	clientAPIConfigQS, err := qs.Values(result.ClientApiConfig) ; ge.Check(err)
-	md5Byte := md5.Sum([]byte(clientAPIConfigQS.Encode()))
-	result.ClientApiConfig.PaySign = strings.ToUpper(fmt.Sprintf("%x", md5Byte))
+	result.PayJSAPIConfig = CreatePayClientAPIConfig(query.APPID, result.PrepayID)
 	return
 }
-
+type PayJSAPIConfig struct {
+	APPID string `url:"appId"json:"appId"`
+	TimeStamp string `url:"timeStamp"json:"timeStamp"`
+	NonceStr string `url:"nonceStr"json:"nonceStr"`
+	Package string `url:"package"json:"package"`
+	SignType string `url:"signType"json:"signType"`
+	PaySign string `url:"paySign"json:"paySign"`
+}
+// 根据 appID prepayID  创建客户端支付API配置参数
+func CreatePayClientAPIConfig(appID string, prepayID string) (config PayJSAPIConfig) {
+	config.APPID = appID
+	config.TimeStamp = gconv.Int64String(time.Now().Unix())
+	config.NonceStr = grand.StringLetter(32)
+	config.Package = "prepay_id=" + prepayID
+	config.SignType = "MD5"
+	clientAPIConfigQS, err := qs.Values(config) ; ge.Check(err)
+	md5Byte := md5.Sum([]byte(clientAPIConfigQS.Encode()))
+	config.PaySign = strings.ToUpper(fmt.Sprintf("%x", md5Byte))
+	return
+}
 func CreatePaySign(query PayUnifiedOrderQuery) (sign string) {
 	// fuck wechat
 	tempNotifyURL := query.NotifyURL
