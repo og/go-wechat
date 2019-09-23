@@ -16,12 +16,12 @@ var someMCH = gwechat.New(gwechat.Config{
 
 func TestWechat_PayUnifiedorder(t *testing.T) {
 	payResult, payErrRes := someMCH.PayUnifiedOrder(gwechat.PayUnifiedOrderQuery{
-		APPID: "wx9f01246e31fd5cae",
+		APPID:  gwechat.TestEnvAPPID,
 		OutTradeNo: grand.StringLetter(32),
 		TotalFee: 1,
 		Body: "test",
 		SpbillCreateIP: "218.81.205.86", // 真实环境务必使用用户客户端ip
-		NotifyURL: "https://github.com/og/go-wechat",
+		NotifyURL: "https://github.com/og",
 		TradeType: gwechat.Dict().PayUnifiedorder.TradeType.JSAPI,
 		OpenID: "otU685kfo1D-tAbgaNVqbPiiRd8k",
 	})
