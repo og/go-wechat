@@ -11,7 +11,6 @@ import (
 	grand "github.com/og/x/rand"
 	"github.com/pkg/errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -80,7 +79,7 @@ type UnifedOrderResult struct {
 		NonceStr string `url:"nonceStr"json:"nonceStr"`
 		Package string `url:"package"json:"package"`
 		SignType string `url:"signType"json:"signType"`
-		Sign string `url:"sign"json:"sign"`
+		PaySign string `url:"paySign"json:"paySign"`
 	}
 
 }
@@ -125,7 +124,7 @@ func (this Wechat) PayUnifiedOrder (query PayUnifiedOrderQuery) (result UnifedOr
 	result.ClientApiConfig.SignType = "MD5"
 	clientAPIConfigQS, err := qs.Values(result.ClientApiConfig) ; ge.Check(err)
 	md5Byte := md5.Sum([]byte(clientAPIConfigQS.Encode()))
-	result.ClientApiConfig.Sign = strings.ToUpper(fmt.Sprintf("%x", md5Byte))
+	result.ClientApiConfig.PaySign = strings.ToUpper(fmt.Sprintf("%x", md5Byte))
 	return
 }
 
@@ -136,7 +135,6 @@ func CreatePaySign(query PayUnifiedOrderQuery) (sign string) {
 	queryString, err := qs.Values(query) ; ge.Check(err)
 	urlString := queryString.Encode()
 	urlString = strings.ReplaceAll(urlString, query.NotifyURL, tempNotifyURL)
-	log.Print(urlString)
 	md5Byte := md5.Sum([]byte(urlString + "&key=" + query.MCHKey))
 	sign = strings.ToUpper(fmt.Sprintf("%x", md5Byte))
 	return
