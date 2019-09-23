@@ -13,7 +13,7 @@ type dictStruct struct {
 			PAYERROR   string `dict:"PAYERROR"note:"支付失败(其他原因，如银行返回失败)"`
 		}
 	}
-	PayUnifiedorder struct{
+	PayUnifiedOrder struct{
 		DeviceInfo struct{
 			WEB string `dict:"WEB"`
 		}

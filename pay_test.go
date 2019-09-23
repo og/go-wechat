@@ -24,7 +24,7 @@ func TestWechat_PayUnifiedorder(t *testing.T) {
 		Body: "test",
 		SpbillCreateIP: "218.81.205.86", // 真实环境务必使用用户客户端ip
 		NotifyURL: "https://github.com/og",
-		TradeType: gwechat.Dict().PayUnifiedorder.TradeType.JSAPI,
+		TradeType: gwechat.Dict().PayUnifiedOrder.TradeType.JSAPI,
 		OpenID: "ovv4N5I8YJ82fTpBf_JOz-3-ljnE",
 	})
 	if payErrRes.Fail {
