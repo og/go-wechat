@@ -111,7 +111,7 @@ func (this Wechat) PayUnifiedOrder (data PayUnifiedOrderData) (result UnifedOrde
 		payErrRes.SetError(errors.New(result.ErrCodeDes))
 		return
 	}
-	result.PayJSAPIConfig = CreatePayClientAPIConfig(data.APPID, result.PrepayID)
+	result.PayJSAPIConfig = CreatePayJSAPIConfig(data.APPID, result.PrepayID)
 	return
 }
 type PayJSAPIConfig struct {
@@ -124,7 +124,7 @@ type PayJSAPIConfig struct {
 
 }
 // 根据 appID prepayID  创建客户端支付API配置参数
-func CreatePayClientAPIConfig(appID string, prepayID string) (config PayJSAPIConfig) {
+func CreatePayJSAPIConfig(appID string, prepayID string) (config PayJSAPIConfig) {
 	config.APPID = appID
 	config.TimeStamp = gconv.Int64String(time.Now().Unix())
 	config.NonceStr = grand.StringLetter(32)
